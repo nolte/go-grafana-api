@@ -13,6 +13,8 @@ import (
 type DashboardMeta struct {
 	IsStarred bool   `json:"isStarred"`
 	Slug      string `json:"slug"`
+	UID       string `json:"uid"`
+	Title     string `json:"title"`
 	Folder    int64  `json:"folderId"`
 }
 
