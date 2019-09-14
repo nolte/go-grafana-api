@@ -55,14 +55,9 @@ func TestNewDataSource(t *testing.T) {
 			AuthType:                "keys",
 			CustomMetricsNamespaces: "SomeNamespace",
 			DefaultRegion:           "us-east-1",
-<<<<<<< HEAD
-			TlsSkipVerify:           true,
-=======
 			ScrapeInterval:          "20s",
 			QueryTimeout:            "60s",
-			Method:                  "GET",
 			KeepCookies:             []string{"X-Grafana-Cookie"},
->>>>>>> forkAnnotations/update_datasource
 		},
 		SecureJSONData: SecureJSONData{
 			AccessKey: "123",
