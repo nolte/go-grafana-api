@@ -29,7 +29,7 @@ func (c *Client) NewPlaylist(s *Playlist) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	req, err := c.newRequest("POST", "/api/playlists", bytes.NewBuffer(data))
+	req, err := c.newRequest("POST", "/api/playlists", nil, bytes.NewBuffer(data))
 	if err != nil {
 		return 0, err
 	}
@@ -60,7 +60,7 @@ func (c *Client) UpdatePlaylist(s *Playlist) error {
 	if err != nil {
 		return err
 	}
-	req, err := c.newRequest("PUT", path, bytes.NewBuffer(data))
+	req, err := c.newRequest("PUT", path, nil, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (c *Client) UpdatePlaylist(s *Playlist) error {
 
 func (c *Client) Playlist(id int64) (*Playlist, error) {
 	path := fmt.Sprintf("/api/playlists/%d", id)
-	req, err := c.newRequest("GET", path, nil)
+	req, err := c.newRequest("GET", path, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (c *Client) Playlist(id int64) (*Playlist, error) {
 
 func (c *Client) DeletePlaylist(id int64) error {
 	path := fmt.Sprintf("/api/playlists/%d", id)
-	req, err := c.newRequest("DELETE", path, nil)
+	req, err := c.newRequest("DELETE", path, nil, nil)
 	if err != nil {
 		return err
 	}
