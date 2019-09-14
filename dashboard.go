@@ -31,10 +31,10 @@ type DashboardSaveResponse struct {
 }
 
 type Dashboard struct {
-	Meta      DashboardMeta          `json:"meta"`
-	Model     map[string]interface{} `json:"dashboard"`
-	Folder    int64                  `json:"folderId"`
-	Overwrite bool                   `json:"overwrite"`
+	Meta      DashboardMeta  `json:"meta"`
+	Model     DashboardModel `json:"dashboard"`
+	Folder    int64          `json:"folderId"`
+	Overwrite bool           `json:"overwrite"`
 }
 
 // Dashboards represent json returned by search API
@@ -48,6 +48,68 @@ type Dashboards struct {
 	FolderID    int64  `json:"folderId"`
 	FolderUID   string `json:"folderUid"`
 	FolderTitle string `json:"folderTitle"`
+}
+
+type Link struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
+}
+type DashboardModel struct {
+	Annotations struct {
+		List []struct {
+			BuiltIn    int    `json:"builtIn"`
+			Datasource string `json:"datasource"`
+			Enable     bool   `json:"enable"`
+			Hide       bool   `json:"hide"`
+			IconColor  string `json:"iconColor"`
+			Name       string `json:"name"`
+			Type       string `json:"type"`
+		} `json:"list"`
+	} `json:"annotations"`
+	Editable      bool             `json:"editable"`
+	GnetID        interface{}      `json:"gnetId"`
+	GraphTooltip  int              `json:"graphTooltip"`
+	ID            int              `json:"id"`
+	Iteration     int64            `json:"iteration"`
+	Links         []Link           `json:"links"`
+	Panels        []DashboardPanel `json:"panels"`
+	Refresh       bool             `json:"refresh"`
+	SchemaVersion int              `json:"schemaVersion"`
+	Style         string           `json:"style"`
+	Tags          []interface{}    `json:"tags"`
+	Templating    struct {
+		List []struct {
+			AllValue interface{} `json:"allValue"`
+			Current  struct {
+				Text  string `json:"text"`
+				Value string `json:"value"`
+			} `json:"current"`
+			Hide       int         `json:"hide"`
+			IncludeAll bool        `json:"includeAll"`
+			Label      interface{} `json:"label"`
+			Multi      bool        `json:"multi"`
+			Name       string      `json:"name"`
+			Options    []struct {
+				Selected bool   `json:"selected"`
+				Text     string `json:"text"`
+				Value    string `json:"value"`
+			} `json:"options"`
+			Query       string `json:"query"`
+			SkipURLSync bool   `json:"skipUrlSync"`
+			Type        string `json:"type"`
+		} `json:"list"`
+	} `json:"templating"`
+	Time struct {
+		From string `json:"from"`
+		To   string `json:"to"`
+	} `json:"time"`
+	Timepicker struct {
+		RefreshIntervals []string `json:"refresh_intervals"`
+	} `json:"timepicker"`
+	Timezone string `json:"timezone"`
+	Title    string `json:"title"`
+	UID      string `json:"uid"`
+	Version  int    `json:"version"`
 }
 
 // DashboardDeleteResponse grafana response for delete dashboard

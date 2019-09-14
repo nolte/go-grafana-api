@@ -13,6 +13,76 @@ import (
 
 var MissingQueryParameterError error
 
+type DashboardPanel struct {
+	Bars         bool   `json:"bars"`
+	DashLength   int    `json:"dashLength"`
+	Dashes       bool   `json:"dashes"`
+	Description  string `json:"description"`
+	Fill         int    `json:"fill"`
+	FillGradient int    `json:"fillGradient"`
+	GridPos      struct {
+		H int `json:"h"`
+		W int `json:"w"`
+		X int `json:"x"`
+		Y int `json:"y"`
+	} `json:"gridPos"`
+	ID     int `json:"id"`
+	Legend struct {
+		Avg     bool `json:"avg"`
+		Current bool `json:"current"`
+		Max     bool `json:"max"`
+		Min     bool `json:"min"`
+		Show    bool `json:"show"`
+		Total   bool `json:"total"`
+		Values  bool `json:"values"`
+	} `json:"legend"`
+	Lines         bool   `json:"lines"`
+	Linewidth     int    `json:"linewidth"`
+	Links         []Link `json:"links"`
+	NullPointMode string `json:"nullPointMode"`
+	Options       struct {
+		DataLinks []interface{} `json:"dataLinks"`
+	} `json:"options"`
+	Percentage      bool          `json:"percentage"`
+	Pointradius     int           `json:"pointradius"`
+	Points          bool          `json:"points"`
+	Renderer        string        `json:"renderer"`
+	SeriesOverrides []interface{} `json:"seriesOverrides"`
+	SpaceLength     int           `json:"spaceLength"`
+	Stack           bool          `json:"stack"`
+	SteppedLine     bool          `json:"steppedLine"`
+	Thresholds      []interface{} `json:"thresholds"`
+	TimeFrom        interface{}   `json:"timeFrom"`
+	TimeRegions     []interface{} `json:"timeRegions"`
+	TimeShift       interface{}   `json:"timeShift"`
+	Title           string        `json:"title"`
+	Tooltip         struct {
+		Shared    bool   `json:"shared"`
+		Sort      int    `json:"sort"`
+		ValueType string `json:"value_type"`
+	} `json:"tooltip"`
+	Type  string `json:"type"`
+	Xaxis struct {
+		Buckets interface{}   `json:"buckets"`
+		Mode    string        `json:"mode"`
+		Name    interface{}   `json:"name"`
+		Show    bool          `json:"show"`
+		Values  []interface{} `json:"values"`
+	} `json:"xaxis"`
+	Yaxes []struct {
+		Format  string      `json:"format"`
+		Label   interface{} `json:"label"`
+		LogBase int         `json:"logBase"`
+		Max     interface{} `json:"max"`
+		Min     interface{} `json:"min"`
+		Show    bool        `json:"show"`
+	} `json:"yaxes"`
+	Yaxis struct {
+		Align      bool        `json:"align"`
+		AlignLevel interface{} `json:"alignLevel"`
+	} `json:"yaxis"`
+}
+
 type GrafanaPanelExport struct {
 	Output      string
 	Panel       GrafanaPanel
