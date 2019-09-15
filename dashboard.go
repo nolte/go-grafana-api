@@ -37,6 +37,28 @@ type Dashboard struct {
 	Overwrite bool           `json:"overwrite"`
 }
 
+func (d Dashboard) FrontendURL(dashboardVars map[string][]string) string {
+	var exportBase string
+	exportBase += "/d"
+	exportBase += "/" + d.Meta.UID
+	exportBase += "?" + dasboardVarsToQueryString(dashboardVars)
+
+	return exportBase
+}
+
+// GetPanelFromDashboard Returns the Panel from a dashboard by given PanelID
+func (d Dashboard) GetPanelFromDashboard(panelID int64) (DashboardPanel, error) {
+
+	for _, panel := range d.Model.Panels {
+		if panel.ID == panelID {
+			return panel, nil
+		}
+	}
+	// panel not found
+	var err error
+	return DashboardPanel{}, err
+}
+
 // Dashboards represent json returned by search API
 type Dashboards struct {
 	ID          int64  `json:"id"`
@@ -54,17 +76,19 @@ type Link struct {
 	Title string `json:"title"`
 	URL   string `json:"url"`
 }
+
+type DashboardAnnotation struct {
+	BuiltIn    int    `json:"builtIn"`
+	Datasource string `json:"datasource"`
+	Enable     bool   `json:"enable"`
+	Hide       bool   `json:"hide"`
+	IconColor  string `json:"iconColor"`
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+}
 type DashboardModel struct {
 	Annotations struct {
-		List []struct {
-			BuiltIn    int    `json:"builtIn"`
-			Datasource string `json:"datasource"`
-			Enable     bool   `json:"enable"`
-			Hide       bool   `json:"hide"`
-			IconColor  string `json:"iconColor"`
-			Name       string `json:"name"`
-			Type       string `json:"type"`
-		} `json:"list"`
+		List []DashboardAnnotation `json:"list"`
 	} `json:"annotations"`
 	Editable      bool             `json:"editable"`
 	GnetID        interface{}      `json:"gnetId"`
@@ -99,10 +123,7 @@ type DashboardModel struct {
 			Type        string `json:"type"`
 		} `json:"list"`
 	} `json:"templating"`
-	Time struct {
-		From string `json:"from"`
-		To   string `json:"to"`
-	} `json:"time"`
+	Time       TimeRange `json:"time"`
 	Timepicker struct {
 		RefreshIntervals []string `json:"refresh_intervals"`
 	} `json:"timepicker"`
@@ -237,6 +258,9 @@ func (c *Client) GetDashboard(uid string) (*Dashboard, error) {
 	if os.Getenv("GF_LOG") != "" {
 		log.Printf("got back dashboard response  %s", data)
 	}
+	// the dashboard uid is not a part of the response
+	result.Meta.UID = uid
+
 	return result, err
 }
 

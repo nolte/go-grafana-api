@@ -7,11 +7,19 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"strconv"
 	"time"
 )
 
-var MissingQueryParameterError error
+const (
+	// GrafanaAPIPanelRender Base for the Grafana Render API
+	GrafanaAPIPanelRender = "/render/d-solo"
+
+	// GrafanaAPIPanelRenderWidth Default Panel Export Width
+	GrafanaAPIPanelRenderWidth = 1000
+
+	// GrafanaAPIPanelRenderHeight Default Panel Export Height
+	GrafanaAPIPanelRenderHeight = 500
+)
 
 type DashboardPanel struct {
 	Bars         bool   `json:"bars"`
@@ -26,7 +34,7 @@ type DashboardPanel struct {
 		X int `json:"x"`
 		Y int `json:"y"`
 	} `json:"gridPos"`
-	ID     int `json:"id"`
+	ID     int64 `json:"id"`
 	Legend struct {
 		Avg     bool `json:"avg"`
 		Current bool `json:"current"`
@@ -83,64 +91,26 @@ type DashboardPanel struct {
 	} `json:"yaxis"`
 }
 
-type GrafanaPanelExport struct {
-	Output      string
-	Panel       GrafanaPanel
-	ExportRange GrafanaPanelExportTimeRange
-	ExportSize  GrafanaPanelExportSize
-
-	Dashboard DashboardMeta
-	Org       Org
-	Tz        string
-
-	DashboardVars map[string][]string
-}
-
-func (e *GrafanaPanelExport) AsQueryParameters() string {
-	template := "orgId=%v%s&%s&%s"
-	panelQuery, _ := e.Panel.AsPartOfUrl()
-	rangeQuery, _ := e.ExportRange.AsPartOfUrl()
-
-	dashboardVarsQuery := ""
-	if len(e.DashboardVars) > 0 {
-		dashboardVarsQuery = "&" + dasboardVarsToQueryString(e.DashboardVars)
-	}
-	url := fmt.Sprintf(template, e.Org.Id, dashboardVarsQuery, panelQuery, rangeQuery)
-	return url
-}
-func (e *GrafanaPanelExport) AsRenderPartOfUrl() string {
-
-	template := "/render/d-solo/%s/%s?%s&%s&tz=%s"
-	sizeQuery, _ := e.ExportSize.AsPartOfUrl()
-	loc, _ := time.LoadLocation(e.Tz)
-	url := fmt.Sprintf(template, e.Dashboard.UID, e.Dashboard.Title, e.AsQueryParameters(), sizeQuery, url.QueryEscape(loc.String()))
-	return url
-}
-
-type GrafanaPanel struct {
-	ID int
-}
-
-func (e *GrafanaPanel) AsPartOfUrl() (string, error) {
-	return fmt.Sprintf("panelId=%v", e.ID), nil
-}
-
-type GrafanaExportQueryParameter interface {
-	AsPartOfUrl() (string, error)
-}
-type GrafanaPanelExportTimeRange struct {
-	From time.Time
-	End  time.Time
-}
-
-func (r *GrafanaPanelExportTimeRange) New(from time.Time, end time.Time) {
-	r.From = from
-	r.End = end
+func (p DashboardPanel) AsPartOfUrl() string {
+	return fmt.Sprintf("panelId=%v&fullscreen", p.ID)
 }
 
 type GrafanaPanelExportSize struct {
 	Width  int
 	Height int
+}
+
+func (size *GrafanaPanelExportSize) New(width int, height int) {
+	if width == 0 {
+		size.Width = GrafanaAPIPanelRenderWidth
+	} else {
+		size.Width = width
+	}
+	if height == 0 {
+		size.Height = GrafanaAPIPanelRenderHeight
+	} else {
+		size.Height = height
+	}
 }
 
 func (size GrafanaPanelExportSize) AsPartOfUrl() (string, error) {
@@ -155,21 +125,71 @@ func (size GrafanaPanelExportSize) AsPartOfUrl() (string, error) {
 	return fmt.Sprintf(template, size.Width, size.Height), nil
 }
 
-func (timeRange GrafanaPanelExportTimeRange) AsPartOfUrl() (string, error) {
-	if timeRange.From.IsZero() {
-		return "", MissingQueryParameterError
-	}
-	if timeRange.End.IsZero() {
-		return "", MissingQueryParameterError
-	}
-	template := "from=%s&to=%s"
+func buildRenderURL(dashboardID string,
+	orgID int64,
+	panelID int64,
+	timeRange TimeRange,
+	exportSize GrafanaPanelExportSize,
+	dashboardVars map[string][]string,
+	timeZone string,
+) (string, error) {
 
-	return fmt.Sprintf(template, timeToGrafanaString(timeRange.From), timeToGrafanaString(timeRange.End)), nil
+	// set the base from the url
+	exportURL := GrafanaAPIPanelRender
+
+	//append dashboard url part (the dashboardslug is not important for the Request)
+	exportURL += "/" + dashboardID + "/neverlandUnicorns?"
+
+	// append the OrgID to the url
+	exportURL += fmt.Sprintf("orgId=%v", orgID)
+
+	// append the panelId to the url
+	exportURL += fmt.Sprintf("&panelId=%v", panelID)
+
+	// append the TimeRange to the url
+	timeRangeQueryParm, err := timeRange.AsPartOfUrl()
+	if err != nil {
+		return "", err
+	}
+	exportURL += "&" + timeRangeQueryParm
+
+	dashboardVarsString := dasboardVarsToQueryString(dashboardVars)
+	if dashboardVarsString != "" {
+		exportURL += "&" + dashboardVarsString
+	}
+
+	exportSizeQueryPart, err := exportSize.AsPartOfUrl()
+	if err != nil {
+		return "", err
+	}
+	exportURL += "&" + exportSizeQueryPart
+
+	loc, err := time.LoadLocation(timeZone)
+	if err != nil {
+		return "", err
+	}
+	exportURL += fmt.Sprintf("&tz=%v", url.QueryEscape(loc.String()))
+
+	return exportURL, nil
 }
 
-func (c *Client) ExportPanelAsImage(export GrafanaPanelExport) error {
-	path := export.AsRenderPartOfUrl()
-	req, err := c.newRequest("GET", path, nil, nil)
+// ExportPanelAsImage a Grafana Panel to the Local Filesystem
+// Save the Panel as PNG
+func (c *Client) ExportPanelAsImage(
+	dashboardID string,
+	orgID int64,
+	panelID int64,
+	timeRange TimeRange,
+	exportSize GrafanaPanelExportSize,
+	dashboardVars map[string][]string,
+	timeZone string,
+	output string) error {
+
+	renderURL, err := buildRenderURL(dashboardID, orgID, panelID, timeRange, exportSize, dashboardVars, timeZone)
+	if err != nil {
+		return err
+	}
+	req, err := c.newRequest("GET", renderURL, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -180,14 +200,14 @@ func (c *Client) ExportPanelAsImage(export GrafanaPanelExport) error {
 	if resp.StatusCode != 200 {
 		return errors.New(resp.Status)
 	}
-
+	//myImage := image.NewRGBA(image.Rect(0, 0, 100, 200))
 	image, err := png.Decode(resp.Body)
 	if err != nil {
 		log.Panic(err)
 		return err
 	}
 
-	f, err := os.Create(export.Output)
+	f, err := os.Create(output)
 	if err != nil {
 		panic(err)
 	}
@@ -202,32 +222,4 @@ func (c *Client) ExportPanelAsImage(export GrafanaPanelExport) error {
 	}
 
 	return nil
-}
-
-func timeToGrafanaString(t time.Time) string {
-	return strconv.FormatInt(t.Unix(), 10) + "000"
-}
-
-func dasboardVarsToQueryString(vars map[string][]string) string {
-	var queryString string
-	queryString = ""
-	template := "var-%s=%v"
-	currentElement := 0
-	for key, value := range vars {
-		currentElement++
-
-		for index, elemet := range value {
-			queryString += fmt.Sprintf(template, key, elemet)
-			if index+1 < len(value) {
-				queryString += "&"
-			}
-		}
-
-		if currentElement < len(vars) {
-			queryString += "&"
-		}
-
-	}
-
-	return queryString
 }

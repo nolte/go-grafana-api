@@ -7,33 +7,18 @@ import (
 	"github.com/magiconair/properties/assert"
 )
 
-func TestCreatePanelExportURL(t *testing.T) {
-	var export GrafanaPanelExport
+func TestCreatePanelRenderURL(t *testing.T) {
 
-	export.Panel.ID = 1
+	timeRange := TimeRange{}
+	timeRange.From = "1567641600000"
+	timeRange.To = "1567727999000"
 
-	timeRange := GrafanaPanelExportTimeRange{}
-
-	str := "2019-09-05T00:00:00.000Z"
-	t1, _ := time.Parse(time.RFC3339, str)
-
-	str = "2019-09-05T23:59:59.999Z"
-	t2, _ := time.Parse(time.RFC3339, str)
-
-	timeRange.New(t1, t2)
-
-	export.ExportRange = timeRange
-
-	export.Dashboard.Title = "testTitle"
-	export.Dashboard.UID = "abc"
-
-	export.ExportSize.Height = 500
-	export.ExportSize.Width = 1000
-	export.Tz = "Europe/Berlin"
-	url := export.AsRenderPartOfUrl()
-	expectedURL := "/render/d-solo/abc/testTitle?orgId=0&panelId=1&from=1567641600000&to=1567727999000&width=1000&height=500&tz=Europe%2FBerlin"
+	exportSize := GrafanaPanelExportSize{}
+	exportSize.New(1000, 800)
+	url, err := buildRenderURL("V3TD6Z5Wk", 1, 2, timeRange, exportSize, nil, "Europe/Berlin")
+	expectedURL := "/render/d-solo/V3TD6Z5Wk/neverlandUnicorns?orgId=1&panelId=2&from=1567641600000&to=1567727999000&width=1000&height=800&tz=Europe%2FBerlin"
+	assert.Equal(t, err, nil, "No error Expected")
 	assert.Equal(t, url, expectedURL, "The two words should be the same.")
-
 }
 
 func TestConvertDateToGrafanaUrlQueryFormat(t *testing.T) {
@@ -42,7 +27,7 @@ func TestConvertDateToGrafanaUrlQueryFormat(t *testing.T) {
 	//str := "2019-09-05T00:00:00.000Z"
 	str := "05.09.2019 00:00 CEST"
 	convertTime, _ := time.Parse(layout, str)
-	grafanaFormattedDate := timeToGrafanaString(convertTime)
+	grafanaFormattedDate := TimeToGrafanaString(convertTime)
 	assert.Equal(t, grafanaFormattedDate, "1567634400000", "The two words should be the same.")
 }
 func TestConvertDashbardVarsToQueryString(t *testing.T) {
