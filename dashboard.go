@@ -12,6 +12,8 @@ import (
 )
 
 type DashboardMeta struct {
+	UID         string `json:"uid"`
+	Title       string `json:"title"`
 	IsStarred   bool   `json:"isStarred"`
 	Slug        string `json:"slug"`
 	Folder      int64  `json:"folderId"`
@@ -29,10 +31,32 @@ type DashboardSaveResponse struct {
 }
 
 type Dashboard struct {
-	Meta      DashboardMeta          `json:"meta"`
-	Model     map[string]interface{} `json:"dashboard"`
-	Folder    int64                  `json:"folderId"`
-	Overwrite bool                   `json:overwrite`
+	Meta      DashboardMeta  `json:"meta"`
+	Model     DashboardModel `json:"dashboard"`
+	Folder    int64          `json:"folderId"`
+	Overwrite bool           `json:"overwrite"`
+}
+
+func (d Dashboard) FrontendURL(dashboardVars map[string][]string) string {
+	var exportBase string
+	exportBase += "/d"
+	exportBase += "/" + d.Meta.UID
+	exportBase += "?" + dasboardVarsToQueryString(dashboardVars)
+
+	return exportBase
+}
+
+// GetPanelFromDashboard Returns the Panel from a dashboard by given PanelID
+func (d Dashboard) GetPanelFromDashboard(panelID int64) (DashboardPanel, error) {
+
+	for _, panel := range d.Model.Panels {
+		if panel.ID == panelID {
+			return panel, nil
+		}
+	}
+	// panel not found
+	var err error
+	return DashboardPanel{}, err
 }
 
 // Dashboards represent json returned by search API
@@ -46,6 +70,67 @@ type Dashboards struct {
 	FolderID    int64  `json:"folderId"`
 	FolderUID   string `json:"folderUid"`
 	FolderTitle string `json:"folderTitle"`
+}
+
+type Link struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
+}
+
+type DashboardAnnotation struct {
+	BuiltIn    int    `json:"builtIn"`
+	Datasource string `json:"datasource"`
+	Enable     bool   `json:"enable"`
+	Hide       bool   `json:"hide"`
+	IconColor  string `json:"iconColor"`
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+}
+type DashboardModel struct {
+	Annotations struct {
+		List []DashboardAnnotation `json:"list"`
+	} `json:"annotations"`
+	Editable      bool             `json:"editable"`
+	GnetID        interface{}      `json:"gnetId"`
+	GraphTooltip  int              `json:"graphTooltip"`
+	ID            int              `json:"id"`
+	Iteration     int64            `json:"iteration"`
+	Links         []Link           `json:"links"`
+	Panels        []DashboardPanel `json:"panels"`
+	Refresh       bool             `json:"refresh"`
+	SchemaVersion int              `json:"schemaVersion"`
+	Style         string           `json:"style"`
+	Tags          []interface{}    `json:"tags"`
+	Templating    struct {
+		List []struct {
+			AllValue interface{} `json:"allValue"`
+			Current  struct {
+				Text  string `json:"text"`
+				Value string `json:"value"`
+			} `json:"current"`
+			Hide       int         `json:"hide"`
+			IncludeAll bool        `json:"includeAll"`
+			Label      interface{} `json:"label"`
+			Multi      bool        `json:"multi"`
+			Name       string      `json:"name"`
+			Options    []struct {
+				Selected bool   `json:"selected"`
+				Text     string `json:"text"`
+				Value    string `json:"value"`
+			} `json:"options"`
+			Query       string `json:"query"`
+			SkipURLSync bool   `json:"skipUrlSync"`
+			Type        string `json:"type"`
+		} `json:"list"`
+	} `json:"templating"`
+	Time       TimeRange `json:"time"`
+	Timepicker struct {
+		RefreshIntervals []string `json:"refresh_intervals"`
+	} `json:"timepicker"`
+	Timezone string `json:"timezone"`
+	Title    string `json:"title"`
+	UID      string `json:"uid"`
+	Version  int    `json:"version"`
 }
 
 // DashboardDeleteResponse grafana response for delete dashboard
@@ -92,7 +177,7 @@ func (c *Client) NewDashboard(dashboard Dashboard) (*DashboardSaveResponse, erro
 	if err != nil {
 		return nil, err
 	}
-	req, err := c.newRequest("POST", "/api/dashboards/db", nil, bytes.NewBuffer(data))
+	req, err := c.newRequest("POST", "/api/dashboards/import", nil, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +258,9 @@ func (c *Client) GetDashboard(uid string) (*Dashboard, error) {
 	if os.Getenv("GF_LOG") != "" {
 		log.Printf("got back dashboard response  %s", data)
 	}
+	// the dashboard uid is not a part of the response
+	result.Meta.UID = uid
+
 	return result, err
 }
 

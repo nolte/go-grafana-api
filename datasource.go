@@ -21,6 +21,7 @@ type DataSource struct {
 
 	OrgId     int64 `json:"orgId,omitempty"`
 	IsDefault bool  `json:"isDefault"`
+	ReadOnly  bool  `json:"readOnly"`
 
 	BasicAuth         bool   `json:"basicAuth"`
 	BasicAuthUser     string `json:"basicAuthUser,omitempty"`
@@ -32,17 +33,44 @@ type DataSource struct {
 
 // JSONData is a representation of the datasource `jsonData` property
 type JSONData struct {
+	// CloudWatch specific
 	AssumeRoleArn           string `json:"assumeRoleArn,omitempty"`
 	AuthType                string `json:"authType,omitempty"`
 	CustomMetricsNamespaces string `json:"customMetricsNamespaces,omitempty"`
 	DefaultRegion           string `json:"defaultRegion,omitempty"`
-	TlsSkipVerify           bool   `json:"tlsSkipVerify,omitempty"`
+
+	// Graphite specific
+	GraphiteVersion string `json:"graphiteVersion,omitempty"`
+
+	// Elasticsearch specific
+	EsVersion                  int64  `json:"esVersion,omitempty"`
+	Interval                   string `json:"interval,omitempty"`
+	MaxConcurrentShardRequests int64  `json:"maxConcurrentShardRequests,omitempty"`
+	TimeField                  string `json:"timeField,omitempty"`
+
+	// OpenTSDB specific
+	TSDBResolution int64 `json:"tsdbResolution,omitempty"`
+	TSDBVersion    int64 `json:"tsdbVersion,omitempty"`
+
+	// PostgreSQL specific
+	SSLMode string `json:"sslmode,omitempty"`
+
+	// Prometheus specific
+	QueryTimeout string `json:"queryTimeout,omitempty"`
+
+	// General
+	KeepCookies    []string `json:"keepCookies,omitempty"`
+	ScrapeInterval string   `json:"timeInterval,omitempty"`
 }
 
 // SecureJSONData is a representation of the datasource `secureJsonData` property
 type SecureJSONData struct {
+	// CloudWatch specific
 	AccessKey string `json:"accessKey,omitempty"`
 	SecretKey string `json:"secretKey,omitempty"`
+
+	// General
+	Password string `json:"password,omitempty"`
 }
 
 func (c *Client) NewDataSource(s *DataSource) (int64, error) {

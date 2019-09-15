@@ -49,12 +49,15 @@ func TestNewDataSource(t *testing.T) {
 		URL:       "http://some-url.com",
 		Access:    "access",
 		IsDefault: true,
+		ReadOnly:  true,
 		JSONData: JSONData{
 			AssumeRoleArn:           "arn:aws:iam::123:role/some-role",
 			AuthType:                "keys",
 			CustomMetricsNamespaces: "SomeNamespace",
 			DefaultRegion:           "us-east-1",
-			TlsSkipVerify:           true,
+			ScrapeInterval:          "20s",
+			QueryTimeout:            "60s",
+			KeepCookies:             []string{"X-Grafana-Cookie"},
 		},
 		SecureJSONData: SecureJSONData{
 			AccessKey: "123",
